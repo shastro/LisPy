@@ -190,7 +190,7 @@ class LispInterpreter:
     #Goal! Create parseTree
     def parse(self):
         if(self.rawInputLine == "QUIT"):
-            self.outfile.close()
+            # self.outfile.close()
             exit()
         elif(self.rawInputLine == "DEBUG"):
             self.debug = not self.debug
