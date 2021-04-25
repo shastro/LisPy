@@ -2,6 +2,7 @@
 import operator as op
 import math
 from pprint import pprint
+import sys
 
 
 class DebugException(Exception):
@@ -89,7 +90,7 @@ class Parser:
 
     def tokenize(self, string):
         #Remove replace "(/)" with spaces then split on spaces to get list of
-        #whitespace deliminated 
+        #whitespace deliminated objects
         tokenized = string.replace('(', " ( ").replace(")", " ) ").replace("'", " ' ").split()
         openCount = 0
         for token in tokenized:
@@ -174,6 +175,7 @@ class LispInterpreter:
         self.debug = False
 
         # self.outfile = open("output.file", "w")
+        # sys.stdout = self.outfile
         #Need some kind of structure to hold expressions for now use list 
 
         self.ast = [] #List with each index going one level deeper into the parseTree
@@ -188,6 +190,7 @@ class LispInterpreter:
     #Goal! Create parseTree
     def parse(self):
         if(self.rawInputLine == "QUIT"):
+            self.outfile.close()
             exit()
         elif(self.rawInputLine == "DEBUG"):
             self.debug = not self.debug
@@ -215,8 +218,6 @@ class LispInterpreter:
             return expr
 
         elif self.env.isDefined((expr[0],)):
-            # print(self.env.getEnv()[expr]) 
-
             symbolDef = self.env.getEnv()[(expr[0],)]
             fname = expr[0]
             fargs = symbolDef[0]
@@ -225,12 +226,12 @@ class LispInterpreter:
 
             exprArgs = expr[1:]
             if(len(exprArgs) != len(fargs)):
-                print(f"Enviroment Error: function \"{fname}\" expected {len(fargs)} args got {len(exprArgs)}")
+                print(f"Environment Error: function \"{fname}\" expected {len(fargs)} args got {len(exprArgs)}")
                 return SENTINEL_EXPR_ERR
             else:
                 evalArgs = [self.eval(x, env) for x in exprArgs]
                 if(self.debug):
-                    print(f"invo <user-def> {fname} args {evalArgs}")
+                    print(f"invo <user-def function {fname}> args {evalArgs}")
 
                 dmap = buildMap(fargs, evalArgs, fbody)
                 fbody_new = recursive_Repl(dmap, fbody)
@@ -241,7 +242,7 @@ class LispInterpreter:
                 symbolDef = self.env.getEnv()[expr] 
                 return symbolDef
             except KeyError:
-                print(f"Enviroment Error: {expr} undefined")
+                print(f"Environment Error: {expr} undefined")
                 return SENTINEL_EXPR_ERR
 
         elif expr[0] in ["define"]:
@@ -254,7 +255,7 @@ class LispInterpreter:
 
         elif expr[0] == "set!":
             if(not self.env.isDefined(expr[1])):
-                print(f"Enviroment Error: {expr[1]} undefined")
+                print(f"Environment Error: {expr[1]} undefined")
                 return SENTINEL_EXPR_ERR
             else:
                 value = self.eval(expr[2], env)  
@@ -302,6 +303,7 @@ class LispInterpreter:
     def REPL(self):
         while True:
             self.getInput()
+            # self.outfile.write(f"> {self.rawInputLine}")
 
             try:
                 self.parse()
@@ -312,6 +314,7 @@ class LispInterpreter:
 
             if evaluation == False:
                 print("NIL")
+                # self.outfile.write("NIL")
             elif evaluation == None:
                 # print("")
                 continue
@@ -319,10 +322,15 @@ class LispInterpreter:
                 continue
             #Quote operator
             elif type(evaluation) == list:
+                # defaultStdOut = sys.stdout
+                # sys.stdout = self.outfile
                 plispyList(evaluation)
                 print("\n", end="")
+                # sys.stdout = defaultStdOut
+
             else:
                 print(evaluation)
+                # self.outfile.write(f"{evaluation}")
             # self.printEval()
 
 
